@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Emergency Info</title>
+</head>
+<body>
+
+<h1>Emergency Details</h1>
+
+<div id="userData">Loading...</div>
+
+<hr>
+
+<h2>Take Action</h2>
+
+<button id="callBtn">Call Contact</button>
+
+<br><br>
+
+<input type="file" id="imageInput" />
+
+<br><br>
+
+<button onclick="sendEmergency()">Report Emergency</button>
+
+<p id="status"></p>
+
+<script>
+  const pathParts = window.location.pathname.split("/");
+  const userId = pathParts.filter(Boolean).pop();
+
+  let currentUser = null;
+
+  // ✅ FETCH USER
+  fetch(`http://localhost:3000/api/users/${userId}`)
+    .then(res => res.json())
+    .then(data => {
+      const user = data.user;
+      currentUser = user;
+
+      document.getElementById("userData").innerHTML = `
+        <p><b>Name:</b> ${user.fullName}</p>
+        <p><b>Phone:</b> ${user.phone}</p>
+        <p><b>Blood Group:</b> ${user.bloodGroup || "N/A"}</p>
+
+        <h3>Emergency Contacts:</h3>
+        <ul>
+          ${(user.emergencyContacts || []).map(c => `
+            <li>${c.name} - ${c.phone}</li>
+          `).join("")}
+        </ul>
+      `;
+
+      // ✅ CALL BUTTON
+      document.getElementById("callBtn").onclick = () => {
+        const phone = user.emergencyContacts?.[0]?.phone;
+        if (phone) {
+          window.location.href = `tel:${phone}`;
+        } else {
+          alert("No contact available");
+        }
+      };
+    })
+    .catch(err => {
+      console.error(err);
+      document.getElementById("userData").innerText = "Error loading data";
+    });
+
+  // ✅ EMERGENCY FUNCTION
+  async function sendEmergency() {
+    const file = document.getElementById("imageInput").files[0];
+
+    if (!file) {
+      alert("Upload image first");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const formData = new FormData();
+
+      formData.append("image", file);
+      formData.append("userId", userId);
+      formData.append("lat", pos.coords.latitude);
+      formData.append("lng", pos.coords.longitude);
+
+      try {
+        await fetch("http://localhost:3000/api/emergency/report", {
+          method: "POST",
+          body: formData
+        });
+
+        document.getElementById("status").innerText =
+          "Emergency sent 🚨";
+
+      } catch (err) {
+        document.getElementById("status").innerText =
+          "Error sending emergency ❌";
+      }
+    });
+  }
+</script>
+
+</body>
+</html>

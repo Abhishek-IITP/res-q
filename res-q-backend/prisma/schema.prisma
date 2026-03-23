@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String   @id @default(uuid())
+  fullName    String
+  dob         DateTime?
+  gender      String?
+  state       String?
+  address     String?
+
+  phone       String   @unique
+  isVerified  Boolean  @default(false)
+
+  bloodGroup  String?
+
+  allergies   String[]
+  conditions  String[]
+  medications String[]
+
+  vehicleNumber String?
+  vehicleType   String?
+
+  qrCodeUrl   String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  emergencyContacts EmergencyContact[]
+  logs               EmergencyLog[]
+}
+
+model EmergencyContact {
+  id        String @id @default(uuid())
+  name      String
+  phone     String
+  relation  String?
+
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmergencyLog {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  locationLat   Float
+  locationLng   Float
+
+  imageUrl      String
+  aiConfidence  Float
+
+  ipAddress     String
+
+  createdAt     DateTime @default(now())
+}
+
+model OTP {
+  id        String   @id @default(uuid())
+  phone     String
+  otp       String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+}
